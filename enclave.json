@@ -1,0 +1,25 @@
+{
+  "exe": "cashier",
+  "key": "private.pem",
+  "debug": false,
+  "heapSize": 512,
+  "executableHeap": false,
+  "productID": 1,
+  "securityVersion": 3,
+  "mounts": [
+    {
+      "source": "/elfinguard/judger/key",
+      "target": "/key",
+      "type": "hostfs",
+      "readOnly": false
+    },
+    {
+      "source": "/etc/ssl",
+      "target": "/etc/ssl",
+      "type": "hostfs",
+      "readOnly": true
+    }
+  ],
+  "env": null,
+  "files": null
+}
