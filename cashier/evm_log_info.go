@@ -1,4 +1,4 @@
-package judger
+package cashier
 
 import (
 	"math/big"
