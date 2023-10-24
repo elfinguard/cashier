@@ -26,11 +26,11 @@ const (
 	vBchChainID          = "0x7669727475616c20426974636f696e2043617368000000000000000000000000"
 )
 
-type IPaymentJudger interface {
+type ICashier interface {
 	judge(rawTx []byte) (*Judgment, error)
 }
 
-type BchStochasticPaymentJudger struct {
+type Cashier struct {
 	bchClient bch.IBchClient
 	privKey   *ecdsa.PrivateKey
 }
@@ -47,7 +47,15 @@ type Judgment struct {
 	ts       int64
 }
 
-func (judger *BchStochasticPaymentJudger) judge(rawTx []byte) (*Judgment, error) {
+func (judger *Cashier) judge(rawTx []byte) (*Judgment, error) {
+	return judgeStochasticPayment(judger.bchClient, judger.privKey, rawTx)
+}
+
+func judgeStochasticPayment(
+	bchClient bch.IBchClient,
+	privKey *ecdsa.PrivateKey,
+	rawTx []byte,
+) (*Judgment, error) {
 	msgTx, err := decodeMsgTx(rawTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode rawTx: %w", err)
@@ -74,12 +82,12 @@ func (judger *BchStochasticPaymentJudger) judge(rawTx []byte) (*Judgment, error)
 		return nil, fmt.Errorf("invalid possibility data length: %x", n)
 	}
 
-	senderInfos, err := getSenderInfos(msgTx, judger.bchClient)
+	senderInfos, err := getSenderInfos(msgTx, bchClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get sender infos: %w", err)
 	}
 
-	mempoolTestOk, err := judger.bchClient.TestMempoolAccept(rawTx)
+	mempoolTestOk, err := bchClient.TestMempoolAccept(rawTx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call testmempoolaccept: %w", err)
 	}
@@ -89,7 +97,7 @@ func (judger *BchStochasticPaymentJudger) judge(rawTx []byte) (*Judgment, error)
 
 	txHash := msgTx.TxHash()
 	alpha := gethcmn.FromHex(txHash.String())
-	beta, pi, err := vrf.Secp256k1Sha256Tai.Prove(judger.privKey, alpha)
+	beta, pi, err := vrf.Secp256k1Sha256Tai.Prove(privKey, alpha)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate VRF random")
 	}
@@ -107,7 +115,7 @@ func (judger *BchStochasticPaymentJudger) judge(rawTx []byte) (*Judgment, error)
 		Data:      data,
 	}
 	logBytes := logInfo.ToBytes()
-	logSig, err := judger.signBytes(logBytes)
+	logSig, err := signBytes(privKey, logBytes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign logInfo: %w", err)
 	}
@@ -126,7 +134,7 @@ func (judger *BchStochasticPaymentJudger) judge(rawTx []byte) (*Judgment, error)
 
 	if judgment.Rand16 < judgment.Prob16 {
 		//fmt.Println("txHash:", txHash.String())
-		_txHash, err := judger.bchClient.SendRawTransaction(rawTx)
+		_txHash, err := bchClient.SendRawTransaction(rawTx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to broadcast tx: %w", err)
 		}
@@ -140,12 +148,12 @@ func (judger *BchStochasticPaymentJudger) judge(rawTx []byte) (*Judgment, error)
 }
 
 // Endorse a message by signing it with privKey
-func (judger *BchStochasticPaymentJudger) signBytes(message []byte) (sig []byte, err error) {
+func signBytes(privKey *ecdsa.PrivateKey, message []byte) (sig []byte, err error) {
 	msgHash := gethcrypto.Keccak256Hash(message)
 	ethMsg := fmt.Sprintf("\x19Ethereum Signed Message:\n%d%s", len(msgHash[:]), msgHash[:])
 	ethMsgHash := gethcrypto.Keccak256Hash([]byte(ethMsg))
 
-	sig, err = gethcrypto.Sign(ethMsgHash[:], judger.privKey)
+	sig, err = gethcrypto.Sign(ethMsgHash[:], privKey)
 	if err == nil {
 		// v=27|28 instead of 0|1...
 		sig[len(sig)-1] += 27

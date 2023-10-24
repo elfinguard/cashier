@@ -30,7 +30,7 @@ var (
 	certBytes   []byte
 	evmAddr     gethcmn.Address
 
-	judger IPaymentJudger
+	cashier ICashier
 )
 
 func StartServer(keyGrantor, listenAddr, bchRpcClientInfo string) {
@@ -49,7 +49,7 @@ func StartServer(keyGrantor, listenAddr, bchRpcClientInfo string) {
 	}
 
 	// create payment judger
-	judger = &BchStochasticPaymentJudger{
+	cashier = &Cashier{
 		bchClient: bchClient,
 		privKey:   privKey,
 	}
@@ -172,7 +172,7 @@ func handleJudgeTx(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rawTx := gethcmn.FromHex(rawTxHex)
-	judgment, err := judger.judge(rawTx)
+	judgment, err := cashier.judge(rawTx)
 	if err != nil {
 		NewErrResp(err.Error()).WriteTo(w)
 		return

@@ -37,7 +37,7 @@ func init() {
 	pubKeyBytes = _pubKey.SerializeCompressed()
 	certBytes = []byte{0xce, 0x27}
 	evmAddr = gethcrypto.PubkeyToAddress(_privKey.PublicKey)
-	judger = &MockJudger{}
+	cashier = &MockJudger{}
 }
 
 func TestHandleCert(t *testing.T) {
