@@ -1,4 +1,4 @@
-package cashier
+package server
 
 import (
 	"crypto/ecdsa"
@@ -18,6 +18,8 @@ import (
 	"github.com/elfinguard/chainlogs/utils"
 	"github.com/elfinhost/elfinhost-lab/certs"
 	"github.com/elfinhost/elfinhost-lab/keygrantor"
+
+	"github.com/elfinguard/cashier/cashier"
 )
 
 const (
@@ -30,7 +32,7 @@ var (
 	certBytes   []byte
 	evmAddr     gethcmn.Address
 
-	cashier ICashier
+	_cashier cashier.ICashier
 )
 
 func StartServer(keyGrantor, listenAddr, bchRpcClientInfo string) {
@@ -49,10 +51,7 @@ func StartServer(keyGrantor, listenAddr, bchRpcClientInfo string) {
 	}
 
 	// create payment judger
-	cashier = &Cashier{
-		bchClient: bchClient,
-		privKey:   privKey,
-	}
+	_cashier = cashier.NewCashier(bchClient, privKey)
 	evmAddr = gethcrypto.PubkeyToAddress(privKey.PublicKey)
 	log.Info("evm address: ", evmAddr.String())
 
@@ -172,7 +171,7 @@ func handleJudgeTx(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rawTx := gethcmn.FromHex(rawTxHex)
-	judgment, err := cashier.judge(rawTx)
+	judgment, err := _cashier.Judge(rawTx)
 	if err != nil {
 		NewErrResp(err.Error()).WriteTo(w)
 		return

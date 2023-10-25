@@ -27,7 +27,7 @@ const (
 )
 
 type ICashier interface {
-	judge(rawTx []byte) (*Judgment, error)
+	Judge(rawTx []byte) (*Judgment, error)
 }
 
 type Cashier struct {
@@ -47,7 +47,14 @@ type Judgment struct {
 	ts       int64
 }
 
-func (judger *Cashier) judge(rawTx []byte) (*Judgment, error) {
+func NewCashier(bchClient bch.IBchClient, privKey *ecdsa.PrivateKey) *Cashier {
+	return &Cashier{
+		bchClient: bchClient,
+		privKey:   privKey,
+	}
+}
+
+func (judger *Cashier) Judge(rawTx []byte) (*Judgment, error) {
 	return judgeStochasticPayment(judger.bchClient, judger.privKey, rawTx)
 }
 

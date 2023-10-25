@@ -1,4 +1,4 @@
-package cashier
+package server
 
 import (
 	"io"
@@ -11,6 +11,8 @@ import (
 	gethcmn "github.com/ethereum/go-ethereum/common"
 	gethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/gcash/bchd/bchec"
+
+	"github.com/elfinguard/cashier/cashier"
 )
 
 const (
@@ -19,8 +21,8 @@ const (
 
 type MockJudger struct{}
 
-func (m *MockJudger) judge(rawTx []byte) (*Judgment, error) {
-	return &Judgment{
+func (m *MockJudger) Judge(rawTx []byte) (*cashier.Judgment, error) {
+	return &cashier.Judgment{
 		Prob16:   1234,
 		Rand16:   5678,
 		VrfAlpha: []byte("alpha"),
@@ -28,7 +30,7 @@ func (m *MockJudger) judge(rawTx []byte) (*Judgment, error) {
 		VrfPi:    []byte("pi"),
 		LogInfo:  []byte("logInfo"),
 		LogSig:   []byte("logSig"),
-		ts:       999,
+		// ts:       999,
 	}, nil
 }
 
@@ -37,7 +39,7 @@ func init() {
 	pubKeyBytes = _pubKey.SerializeCompressed()
 	certBytes = []byte{0xce, 0x27}
 	evmAddr = gethcrypto.PubkeyToAddress(_privKey.PublicKey)
-	cashier = &MockJudger{}
+	_cashier = &MockJudger{}
 }
 
 func TestHandleCert(t *testing.T) {

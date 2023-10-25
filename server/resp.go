@@ -1,4 +1,4 @@
-package cashier
+package server
 
 import (
 	"encoding/json"

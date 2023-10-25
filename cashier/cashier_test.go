@@ -104,44 +104,44 @@ func createMockBchClient(t *testing.T) *bch.MockClient {
 
 func TestJudger_decodeMsgTxErr(t *testing.T) {
 	r := &Cashier{}
-	_, err := r.judge([]byte{1, 2, 3, 4, 5, 6})
+	_, err := r.Judge([]byte{1, 2, 3, 4, 5, 6})
 	require.ErrorContains(t, err, "failed to decode rawTx")
 }
 
 func TestJudger_noReceiversErr(t *testing.T) {
 	r := &Cashier{}
 	rawTx := strings.Replace(rawTx1, "76a914", "a97614", -1)
-	_, err := r.judge(gethcmn.FromHex(rawTx))
+	_, err := r.Judge(gethcmn.FromHex(rawTx))
 	require.ErrorContains(t, err, "receiver infos not found")
 }
 
 func TestJudger_noOpRetErr(t *testing.T) {
 	r := &Cashier{}
 	rawTx := strings.Replace(rawTx1, "6a0445475458", "6b0445475458", -1)
-	_, err := r.judge(gethcmn.FromHex(rawTx))
+	_, err := r.Judge(gethcmn.FromHex(rawTx))
 	require.ErrorContains(t, err, "opRet not found")
 }
 
 func TestJudger_parseOpRetErr(t *testing.T) {
 	r := &Cashier{}
 	rawTx := strings.Replace(rawTx1, "6a0445475458", "6a0445475459", -1)
-	_, err := r.judge(gethcmn.FromHex(rawTx))
+	_, err := r.Judge(gethcmn.FromHex(rawTx))
 	require.ErrorContains(t, err, "failed to parse opRet script")
 }
 
 func TestJudger_possibilityErr(t *testing.T) {
 	r := &Cashier{}
-	_, err := r.judge(gethcmn.FromHex(rawTx1))
+	_, err := r.Judge(gethcmn.FromHex(rawTx1))
 	require.ErrorContains(t, err, "no possibility data")
 
 	rawTx := strings.Replace(rawTx1, "666a04454754581456eb561cb6f98a985f80464fa99267a462c91bdb14e94358e473941de2d75d19fa330d607e05ffab4214efc507fb38cbcae3b32d1777e54593bc07eca5a1204ea5c508a6566e76240543f8feb06fd457777be300005af3107a400000000001",
 		"6b6a04454754581456eb561cb6f98a985f80464fa99267a462c91bdb14e94358e473941de2d75d19fa330d607e05ffab4214efc507fb38cbcae3b32d1777e54593bc07eca5a1204ea5c508a6566e76240543f8feb06fd457777be300005af3107a4000000000010003aabbcc", -1)
-	_, err = r.judge(gethcmn.FromHex(rawTx))
+	_, err = r.Judge(gethcmn.FromHex(rawTx))
 	require.ErrorContains(t, err, "invalid possibility data length: 3")
 
 	rawTx = strings.Replace(rawTx1, "666a04454754581456eb561cb6f98a985f80464fa99267a462c91bdb14e94358e473941de2d75d19fa330d607e05ffab4214efc507fb38cbcae3b32d1777e54593bc07eca5a1204ea5c508a6566e76240543f8feb06fd457777be300005af3107a400000000001",
 		"696a04454754581456eb561cb6f98a985f80464fa99267a462c91bdb14e94358e473941de2d75d19fa330d607e05ffab4214efc507fb38cbcae3b32d1777e54593bc07eca5a1204ea5c508a6566e76240543f8feb06fd457777be300005af3107a4000000000010001aa", -1)
-	_, err = r.judge(gethcmn.FromHex(rawTx))
+	_, err = r.Judge(gethcmn.FromHex(rawTx))
 	require.ErrorContains(t, err, "invalid possibility data length: 1")
 }
 
@@ -149,7 +149,7 @@ func TestJudger_mempoolTestErr(t *testing.T) {
 	r := &Cashier{
 		bchClient: createMockBchClient(t),
 	}
-	_, err := r.judge(gethcmn.FromHex(rawTx2))
+	_, err := r.Judge(gethcmn.FromHex(rawTx2))
 	require.ErrorContains(t, err, "testmempoolaccept returns false")
 }
 
@@ -163,7 +163,7 @@ func TestJudger_notBroadcastTx(t *testing.T) {
 		bchClient: mc,
 		privKey:   privKeyUT,
 	}
-	judgement, err := r.judge(gethcmn.FromHex(rawTx))
+	judgement, err := r.Judge(gethcmn.FromHex(rawTx))
 	require.NoError(t, err)
 	require.Equal(t, txId, hex.EncodeToString(judgement.VrfAlpha))
 	require.Len(t, judgement.VrfBeta, 32)
@@ -185,7 +185,7 @@ func TestJudger_broadcastTx(t *testing.T) {
 		bchClient: mc,
 		privKey:   privKeyUT,
 	}
-	judgement, err := r.judge(gethcmn.FromHex(rawTx))
+	judgement, err := r.Judge(gethcmn.FromHex(rawTx))
 	require.NoError(t, err)
 	require.Equal(t, txHash.String(), hex.EncodeToString(judgement.VrfAlpha))
 	require.Len(t, judgement.VrfBeta, 32)

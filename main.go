@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 
-	"github.com/elfinguard/cashier/cashier"
+	"github.com/elfinguard/cashier/server"
 )
 
 var (
@@ -18,5 +18,5 @@ func main() {
 	flag.StringVar(&listenAddr, "listen-addr", listenAddr, "listen addr, ip:port")
 	flag.Parse()
 
-	cashier.StartServer(keyGrantor, listenAddr, bchRpcInfo)
+	server.StartServer(keyGrantor, listenAddr, bchRpcInfo)
 }
