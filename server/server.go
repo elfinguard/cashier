@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/edgelesssys/ego/enclave"
@@ -100,6 +101,7 @@ func createHttpHandlers() *http.ServeMux {
 	mux.HandleFunc("/pubkey-report", handlePubkeyReport)
 	mux.HandleFunc("/evm-address", handleEvmAddress)
 	mux.HandleFunc("/judge", handleJudgeTx)
+	mux.HandleFunc("/prove-cashtokens", handleProveCashTokens)
 	return mux
 }
 
@@ -171,12 +173,39 @@ func handleJudgeTx(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rawTx := gethcmn.FromHex(rawTxHex)
-	judgment, err := _cashier.Judge(rawTx)
+	judgment, err := _cashier.JudgeStochasticPayment(rawTx)
 	if err != nil {
 		NewErrResp(err.Error()).WriteTo(w)
 		return
 	}
 	NewOkResp(judgment).WriteTo(w)
+}
+
+func handleProveCashTokens(w http.ResponseWriter, r *http.Request) {
+	txid := utils.GetQueryParam(r, "txid")
+	if txid == "" {
+		NewErrResp("missing param: txid").WriteTo(w)
+		return
+	}
+
+	vout := utils.GetQueryParam(r, "vout")
+	if vout == "" {
+		NewErrResp("missing param: vout").WriteTo(w)
+		return
+	}
+
+	index, err := strconv.ParseUint(vout, 10, 32)
+	if err != nil {
+		NewErrResp("invalid param: vout").WriteTo(w)
+		return
+	}
+
+	proof, err := _cashier.ProveCashTokensOwnership(txid, uint32(index))
+	if err != nil {
+		NewErrResp(err.Error()).WriteTo(w)
+		return
+	}
+	NewOkResp(proof).WriteTo(w)
 }
 
 func getPrivKey(keyGrantor string) (*ecdsa.PrivateKey, error) {

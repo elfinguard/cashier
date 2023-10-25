@@ -21,8 +21,8 @@ const (
 
 type MockJudger struct{}
 
-func (m *MockJudger) Judge(rawTx []byte) (*cashier.Judgment, error) {
-	return &cashier.Judgment{
+func (m *MockJudger) JudgeStochasticPayment(rawTx []byte) (*cashier.PaymentJudgment, error) {
+	return &cashier.PaymentJudgment{
 		Prob16:   1234,
 		Rand16:   5678,
 		VrfAlpha: []byte("alpha"),

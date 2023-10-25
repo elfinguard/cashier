@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/edgelesssys/ego v1.2.0
-	github.com/elfinguard/chainlogs v0.0.0-20231017155429-d5fe41685385
+	github.com/elfinguard/chainlogs v0.0.0-20231024082800-74a687e6c201
 	github.com/elfinhost/elfinhost-lab v0.0.0-20230421034809-e183d811898b
 	github.com/ethereum/go-ethereum v1.11.6
 	github.com/gcash/bchd v0.19.0
@@ -40,3 +40,5 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/gcash/bchd v0.19.0 => github.com/wangkui0508/bchd v0.0.0-20231024075024-b80126c2fc20
