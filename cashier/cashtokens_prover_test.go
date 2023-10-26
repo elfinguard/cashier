@@ -1,6 +1,7 @@
 package cashier
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"testing"
 
@@ -136,6 +137,8 @@ func TestProveCashTokensOwnership(t *testing.T) {
 	require.Equal(t, int64(18874), proof1.Confirmations)
 	require.Equal(t, "f11c46d9edfada19dc967daa9089fe2ae7be4e7900000000000ffffffff0bdc0",
 		bnToHex(proof1.TokenInfo.AddressAndTokenAmount))
+	require.Equal(t, "f11c46d9edfada19dc967daa9089fe2ae7be4e7900000000000ffffffff0bdc0edbe109abcc7a7509c375379435726748f4ffae819dd582660f752aa1e01bd3f01010000000000000000000000000000000000000000000000000000000000000101000000000000000000000000000000000000000000000000000000000000",
+		hex.EncodeToString(proof1.TokenData))
 
 	proof2, err := r.ProveCashTokensOwnership(txId, 2)
 	require.NoError(t, err)

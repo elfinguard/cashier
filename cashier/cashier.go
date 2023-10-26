@@ -42,6 +42,7 @@ type CashTokensProof struct {
 	Vout          uint32        `json:"vout"`
 	Confirmations int64         `json:"confirmations"`
 	TokenInfo     bch.TokenInfo `json:"tokenInfo"`
+	TokenData     hexutil.Bytes `json:"tokenData"`
 	Sig           hexutil.Bytes `json:"sig"`
 }
 

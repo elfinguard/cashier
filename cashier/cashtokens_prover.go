@@ -37,8 +37,8 @@ func proveCashTokensOwnership(
 		return nil, err
 	}
 
-	tokenInfoBytes := tokenInfoToBytes(tokenInfo)
-	sig, err := signBytes(privKey, tokenInfoBytes)
+	tokenData := tokenInfoToBytes(tokenInfo)
+	sig, err := signBytes(privKey, tokenData)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +48,7 @@ func proveCashTokensOwnership(
 		Vout:          vout,
 		Confirmations: txOut.Confirmations,
 		TokenInfo:     *tokenInfo,
+		TokenData:     tokenData,
 		Sig:           sig,
 	}
 
