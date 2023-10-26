@@ -3,8 +3,10 @@ package cashier
 import (
 	"crypto/ecdsa"
 	"encoding/binary"
-	"math"
+	"errors"
+	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 
 	gethcmn "github.com/ethereum/go-ethereum/common"
@@ -18,19 +20,23 @@ func proveCashTokensOwnership(
 	bchClient bch.IBchClient,
 	privKey *ecdsa.PrivateKey,
 	txid string, vout uint32,
+	mempool bool,
 ) (*CashTokensProof, error) {
 	txHash, err := chainhash.NewHashFromStr(txid)
 	if err != nil {
 		return nil, err
 	}
 
-	mempool := true // ??
 	txOut, err := bchClient.GetTxOut(txHash, vout, mempool)
 	if err != nil {
 		return nil, err
 	}
 
-	tokenInfo := txOutToTokenData(txOut)
+	tokenInfo, err := txOutToTokenData(txOut)
+	if err != nil {
+		return nil, err
+	}
+
 	tokenInfoBytes := tokenInfoToBytes(tokenInfo)
 	sig, err := signBytes(privKey, tokenInfoBytes)
 	if err != nil {
@@ -38,27 +44,38 @@ func proveCashTokensOwnership(
 	}
 
 	proof := &CashTokensProof{
-		TXID:      txid,
-		Vout:      vout,
-		TokenInfo: *tokenInfo,
-		Sig:       sig,
+		TXID:          txid,
+		Vout:          vout,
+		Confirmations: txOut.Confirmations,
+		TokenInfo:     *tokenInfo,
+		Sig:           sig,
 	}
 
 	return proof, nil
 }
 
-func txOutToTokenData(txOut *btcjson.GetTxOutResult) *bch.TokenInfo {
+func txOutToTokenData(txOut *btcjson.GetTxOutResult) (*bch.TokenInfo, error) {
 	var addrAndTokenAmt [32]byte
 	var tokenId [32]byte
 	var nftDataLenAndHead [32]byte
 	var nftDataTail [32]byte
 
+	if txOut == nil {
+		return nil, errors.New("no tx out")
+	}
+	if txOut.TokenData.Amount == "" {
+		return nil, errors.New("no token data")
+	}
+
 	asm := strings.Split(txOut.ScriptPubKey.Asm, " ")
 	addr := getAddrFromASM(asm)
 	copy(addrAndTokenAmt[0:20], addr)
 
-	amt := utxoAmtToSats(txOut.Value)
-	binary.BigEndian.PutUint64(addrAndTokenAmt[24:], amt)
+	tokenAmt, err := strconv.ParseUint(txOut.TokenData.Amount, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse token amount %w", err)
+	}
+	binary.BigEndian.PutUint64(addrAndTokenAmt[24:], tokenAmt)
 
 	copy(tokenId[:], gethcmn.Hex2Bytes(txOut.TokenData.Category))
 
@@ -72,12 +89,13 @@ func txOutToTokenData(txOut *btcjson.GetTxOutResult) *bch.TokenInfo {
 		copy(nftDataTail[:], commitment[8:])
 	}
 
-	return &bch.TokenInfo{
+	tokenInfo := &bch.TokenInfo{
 		AddressAndTokenAmount:      big.NewInt(0).SetBytes(addrAndTokenAmt[:]),
 		TokenCategory:              big.NewInt(0).SetBytes(tokenId[:]),
 		NftCommitmentLengthAndHead: big.NewInt(0).SetBytes(nftDataLenAndHead[:]),
 		NftCommitmentTail:          big.NewInt(0).SetBytes(nftDataTail[:]),
 	}
+	return tokenInfo, nil
 }
 
 func getAddrFromASM(asm []string) []byte {
@@ -115,10 +133,6 @@ func getNftCap(cap string) byte {
 	default:
 		return 0
 	}
-}
-
-func utxoAmtToSats(amt float64) uint64 {
-	return uint64(math.Round(amt * 1e8))
 }
 
 func tokenInfoToBytes(tokenInfo *bch.TokenInfo) []byte {

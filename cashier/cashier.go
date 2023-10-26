@@ -38,10 +38,11 @@ type PaymentJudgment struct {
 }
 
 type CashTokensProof struct {
-	TXID      string        `json:"txid"`
-	Vout      uint32        `json:"vout"`
-	TokenInfo bch.TokenInfo `json:"tokenInfo"`
-	Sig       hexutil.Bytes `json:"sig"`
+	TXID          string        `json:"txid"`
+	Vout          uint32        `json:"vout"`
+	Confirmations int64         `json:"confirmations"`
+	TokenInfo     bch.TokenInfo `json:"tokenInfo"`
+	Sig           hexutil.Bytes `json:"sig"`
 }
 
 func NewCashier(bchClient bch.IBchClient, privKey *ecdsa.PrivateKey) *Cashier {
@@ -56,7 +57,8 @@ func (c *Cashier) JudgeStochasticPayment(rawTx []byte) (*PaymentJudgment, error)
 }
 
 func (c *Cashier) ProveCashTokensOwnership(txid string, vout uint32) (*CashTokensProof, error) {
-	return proveCashTokensOwnership(c.bchClient, c.privKey, txid, vout)
+	mempool := true // TODO
+	return proveCashTokensOwnership(c.bchClient, c.privKey, txid, vout, mempool)
 }
 
 // Endorse a message by signing it with privKey

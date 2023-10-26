@@ -34,6 +34,11 @@ func (m *MockJudger) JudgeStochasticPayment(rawTx []byte) (*cashier.PaymentJudgm
 	}, nil
 }
 
+func (m *MockJudger) ProveCashTokensOwnership(txid string, vout uint32) (*cashier.CashTokensProof, error) {
+	// TODO
+	return nil, nil
+}
+
 func init() {
 	_privKey, _pubKey := bchec.PrivKeyFromBytes(bchec.S256(), gethcmn.FromHex(testPrivKey))
 	pubKeyBytes = _pubKey.SerializeCompressed()

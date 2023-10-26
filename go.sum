@@ -929,6 +929,8 @@ github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaB
 github.com/eknkc/amber v0.0.0-20171010120322-cdade1c07385/go.mod h1:0vRUJqYpeSZifjYj7uP3BG/gKcuzL9xWVV/Y+cK33KM=
 github.com/elfinguard/chainlogs v0.0.0-20231024082800-74a687e6c201 h1:cdX3V1qSbveZFq6akZhHH1brhMUL4rounnKlpQLE7Xo=
 github.com/elfinguard/chainlogs v0.0.0-20231024082800-74a687e6c201/go.mod h1:r/44SlEmCpIVF6NWAykdOql1/G05qbUZ7rpDzkVPC6U=
+github.com/elfinguard/chainlogs v0.0.0-20231026024956-0928cd44a66a h1:JEkFvgntqnCYodhk3yT4+T6iiu/fMVEvh2tGhs1r69M=
+github.com/elfinguard/chainlogs v0.0.0-20231026024956-0928cd44a66a/go.mod h1:r/44SlEmCpIVF6NWAykdOql1/G05qbUZ7rpDzkVPC6U=
 github.com/elfinhost/elfinhost-lab v0.0.0-20230421034809-e183d811898b h1:TvPlsxTvGkwanETqBff6Q2bsWuE9ganS2L6iwG3CUr8=
 github.com/elfinhost/elfinhost-lab v0.0.0-20230421034809-e183d811898b/go.mod h1:tqy5JfutkABHApt8wcT7tKtSKThYkmM/vyiUiRvO/Vk=
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
