@@ -102,6 +102,7 @@ func createHttpHandlers() *http.ServeMux {
 	mux.HandleFunc("/evm-address", handleEvmAddress)
 	mux.HandleFunc("/judge", handleJudgeTx)
 	mux.HandleFunc("/prove-cashtokens", handleProveCashTokens)
+	mux.HandleFunc("/decrypt-for-token-owner", handleDecryptForTokenOwner)
 	return mux
 }
 
@@ -206,6 +207,56 @@ func handleProveCashTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	NewOkResp(proof).WriteTo(w)
+}
+
+func handleDecryptForTokenOwner(w http.ResponseWriter, r *http.Request) {
+	metaData := utils.GetQueryParam(r, "metadata")
+	if metaData == "" {
+		NewErrResp("missing param: metaData").WriteTo(w)
+		return
+	}
+
+	encryptedData := utils.GetQueryParam(r, "encrypted")
+	if encryptedData == "" {
+		NewErrResp("missing param: encrypted").WriteTo(w)
+		return
+	}
+
+	pubkeyData := utils.GetQueryParam(r, "pubkey")
+	if pubkeyData == "" {
+		NewErrResp("missing param: pubkey").WriteTo(w)
+		return
+	}
+
+	txid := utils.GetQueryParam(r, "txid")
+	if txid == "" {
+		NewErrResp("missing param: txid").WriteTo(w)
+		return
+	}
+
+	vout := utils.GetQueryParam(r, "vout")
+	if vout == "" {
+		NewErrResp("missing param: vout").WriteTo(w)
+		return
+	}
+	index, err := strconv.ParseUint(vout, 10, 32)
+	if err != nil {
+		NewErrResp("invalid param: vout").WriteTo(w)
+		return
+	}
+
+	result, err := _cashier.DecryptForTokenOwner(
+		gethcmn.FromHex(metaData),
+		gethcmn.FromHex(encryptedData),
+		gethcmn.FromHex(pubkeyData),
+		txid,
+		uint32(index),
+	)
+	if err != nil {
+		NewErrResp(err.Error()).WriteTo(w)
+		return
+	}
+	NewOkResp(result).WriteTo(w)
 }
 
 func getPrivKey(keyGrantor string) (*ecdsa.PrivateKey, error) {

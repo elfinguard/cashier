@@ -18,6 +18,8 @@ const (
 type ICashier interface {
 	JudgeStochasticPayment(rawTx []byte) (*PaymentJudgment, error)
 	ProveCashTokensOwnership(txid string, vout uint32) (*CashTokensProof, error)
+	DecryptForTokenOwner(encodedMetaData []byte, encryptedData []byte, reencryptPubKey []byte,
+		txid string, vout uint32) ([]byte, error)
 }
 
 type Cashier struct {
@@ -60,6 +62,18 @@ func (c *Cashier) JudgeStochasticPayment(rawTx []byte) (*PaymentJudgment, error)
 func (c *Cashier) ProveCashTokensOwnership(txid string, vout uint32) (*CashTokensProof, error) {
 	mempool := true // TODO
 	return proveCashTokensOwnership(c.bchClient, c.privKey, txid, vout, mempool)
+}
+
+func (c *Cashier) DecryptForTokenOwner(
+	encodedMetaData []byte,
+	encryptedData []byte,
+	reencryptPubKey []byte,
+	txid string,
+	vout uint32,
+) ([]byte, error) {
+
+	return decryptForTokenOwner(c.bchClient, c.privKey,
+		encodedMetaData, encodedMetaData, reencryptPubKey, txid, vout)
 }
 
 // Endorse a message by signing it with privKey

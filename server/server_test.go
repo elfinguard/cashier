@@ -52,6 +52,16 @@ func (m *MockCashier) ProveCashTokensOwnership(txid string, vout uint32) (*cashi
 	}, nil
 }
 
+func (m *MockCashier) DecryptForTokenOwner(
+	encodedMetaData []byte,
+	encryptedData []byte,
+	reencryptPubKey []byte,
+	txid string,
+	vout uint32,
+) ([]byte, error) {
+	panic("TODO")
+}
+
 func init() {
 	_privKey, _pubKey := bchec.PrivKeyFromBytes(bchec.S256(), gethcmn.FromHex(testPrivKey))
 	pubKeyBytes = _pubKey.SerializeCompressed()
@@ -104,6 +114,10 @@ func TestHandleProveCashTokens(t *testing.T) {
 		mustCallHandler("/prove-cashtokens?txid=1234"))
 	require.Equal(t, `{"success":true,"result":{"txid":"1234","vout":2345,"confirmations":3456,"tokenInfo":{"addressAndTokenAmount":1111,"tokenCategory":2222,"nftCommitmentLengthAndHead":3333,"nftCommitmentTail":4444},"tokenData":"0x746f6b656e44617461","sig":"0x736967"}}`,
 		mustCallHandler("/prove-cashtokens?txid=1234&vout=2"))
+}
+
+func TestHandleDecryptForTokenOwner(t *testing.T) {
+	// TODO
 }
 
 func mustCallHandler(path string) string {
