@@ -99,6 +99,11 @@ func txOutToTokenData(txOut *btcjson.GetTxOutResult) (*bch.TokenInfo, error) {
 	return tokenInfo, nil
 }
 
+func getAddrFromTxOut(txOut *btcjson.GetTxOutResult) []byte {
+	asm := strings.Split(txOut.ScriptPubKey.Asm, " ")
+	return getAddrFromASM(asm)
+}
+
 func getAddrFromASM(asm []string) []byte {
 	// P2SH ?
 	if len(asm) == 3 &&
