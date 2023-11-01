@@ -20,6 +20,18 @@ import (
 	"github.com/elfinguard/chainlogs/bch"
 )
 
+type PaymentJudgment struct {
+	Prob16   uint16        `json:"prob16"`
+	Rand16   uint16        `json:"rand16"`
+	VrfAlpha hexutil.Bytes `json:"vrfAlpha"`
+	VrfBeta  hexutil.Bytes `json:"vrfBeta"`
+	VrfPi    hexutil.Bytes `json:"vrfPi"`
+	LogInfo  hexutil.Bytes `json:"logInfo"`
+	LogSig   hexutil.Bytes `json:"logSig"`
+	LogRaw   LogInfo       `json:"rawLog"`
+	ts       int64
+}
+
 func judgeStochasticPayment(
 	bchClient bch.IBchClient,
 	privKey *ecdsa.PrivateKey,

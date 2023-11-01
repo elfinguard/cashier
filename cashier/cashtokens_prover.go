@@ -10,11 +10,21 @@ import (
 	"strings"
 
 	gethcmn "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gcash/bchd/btcjson"
 	"github.com/gcash/bchd/chaincfg/chainhash"
 
 	"github.com/elfinguard/chainlogs/bch"
 )
+
+type CashTokensProof struct {
+	TXID          string        `json:"txid"`
+	Vout          uint32        `json:"vout"`
+	Confirmations int64         `json:"confirmations"`
+	TokenInfo     bch.TokenInfo `json:"tokenInfo"`
+	TokenData     hexutil.Bytes `json:"tokenData"`
+	Sig           hexutil.Bytes `json:"sig"`
+}
 
 func proveCashTokensOwnership(
 	bchClient bch.IBchClient,

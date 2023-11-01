@@ -4,7 +4,6 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/elfinguard/chainlogs/bch"
@@ -25,27 +24,6 @@ type ICashier interface {
 type Cashier struct {
 	bchClient bch.IBchClient
 	privKey   *ecdsa.PrivateKey
-}
-
-type PaymentJudgment struct {
-	Prob16   uint16        `json:"prob16"`
-	Rand16   uint16        `json:"rand16"`
-	VrfAlpha hexutil.Bytes `json:"vrfAlpha"`
-	VrfBeta  hexutil.Bytes `json:"vrfBeta"`
-	VrfPi    hexutil.Bytes `json:"vrfPi"`
-	LogInfo  hexutil.Bytes `json:"logInfo"`
-	LogSig   hexutil.Bytes `json:"logSig"`
-	LogRaw   LogInfo       `json:"rawLog"`
-	ts       int64
-}
-
-type CashTokensProof struct {
-	TXID          string        `json:"txid"`
-	Vout          uint32        `json:"vout"`
-	Confirmations int64         `json:"confirmations"`
-	TokenInfo     bch.TokenInfo `json:"tokenInfo"`
-	TokenData     hexutil.Bytes `json:"tokenData"`
-	Sig           hexutil.Bytes `json:"sig"`
 }
 
 func NewCashier(bchClient bch.IBchClient, privKey *ecdsa.PrivateKey) *Cashier {

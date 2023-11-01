@@ -31,8 +31,6 @@ func decryptForTokenOwner(
 	txid string,
 	vout uint32,
 ) ([]byte, error) {
-	// todo
-
 	metaData, err := decodeMetaData(encodedMetaData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %d", err)
