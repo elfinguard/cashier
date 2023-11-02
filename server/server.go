@@ -17,6 +17,7 @@ import (
 
 	"github.com/elfinguard/chainlogs/bch"
 	"github.com/elfinguard/chainlogs/utils"
+	"github.com/elfinguard/elfinguard/certs"
 	"github.com/smartbch/egvm/keygrantor"
 
 	"github.com/elfinguard/cashier/cashier"
@@ -71,7 +72,7 @@ func startHttpServer(listenAddr string) {
 }
 
 func startHttpsServer(listenAddr string) {
-	certificate, err := LoadCertAndDecryptedKey(HttpsCertFile, DecryptedHttpsKeyFile)
+	certificate, err := certs.LoadCertAndDecryptedKey(HttpsCertFile, DecryptedHttpsKeyFile)
 	if err != nil {
 		log.Errorf("Failed to load encrypted https key and certificate: %v", err)
 		return

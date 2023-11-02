@@ -6,6 +6,7 @@ require (
 	github.com/ecies/go/v2 v2.0.5
 	github.com/edgelesssys/ego v1.2.0
 	github.com/elfinguard/chainlogs v0.0.0-20231026024956-0928cd44a66a
+	github.com/elfinguard/elfinguard v0.0.0-20231023003651-6ffa3c96fc5c
 	github.com/ethereum/go-ethereum v1.11.6
 	github.com/gcash/bchd v0.19.0
 	github.com/gcash/bchutil v0.0.0-20210113190856-6ea28dff4000
@@ -26,11 +27,14 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.2.3 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
+	github.com/fomichev/secp256k1 v0.0.0-20180413221153-00116ff8c62f // indirect
 	github.com/gcash/bchlog v0.0.0-20180913005452-b4f036f92fa6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/philhofer/fwd v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/zerolog v1.27.0 // indirect
+	github.com/tinylib/msgp v1.1.6 // indirect
 	github.com/tyler-smith/go-bip32 v1.0.0 // indirect
 	golang.org/x/crypto v0.9.0 // indirect
 	golang.org/x/sys v0.8.0 // indirect
