@@ -20,7 +20,7 @@ type ICashier interface {
 	DecryptForTokenOwner(encodedMetaData []byte, encryptedData []byte, reencryptPubKey []byte,
 		txid string, vout uint32) ([]byte, error)
 	DecryptForPaidUser(encodedMetaData []byte, encryptedData []byte, reencryptPubKey []byte,
-		rawTx []byte) ([]byte, error)
+		rawTx []byte) (*ReencryptedDataForPaidUser, error)
 }
 
 type Cashier struct {
@@ -60,7 +60,7 @@ func (c *Cashier) DecryptForPaidUser(
 	encryptedData []byte,
 	reencryptPubKey []byte,
 	rawTx []byte,
-) ([]byte, error) {
+) (*ReencryptedDataForPaidUser, error) {
 	return decryptForPaidUser(c.bchClient, c.privKey,
 		encodedMetaData, encodedMetaData, reencryptPubKey, rawTx)
 }

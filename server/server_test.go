@@ -67,7 +67,7 @@ func (m *MockCashier) DecryptForPaidUser(
 	encryptedData []byte,
 	reencryptPubKey []byte,
 	rawTx []byte,
-) ([]byte, error) {
+) (*cashier.ReencryptedDataForPaidUser, error) {
 	panic("TODO")
 }
 

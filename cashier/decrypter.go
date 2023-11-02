@@ -10,17 +10,31 @@ import (
 	"strconv"
 
 	eciesgo "github.com/ecies/go/v2"
+	gethcmn "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gcash/bchd/chaincfg/chainhash"
 	"github.com/gcash/bchutil"
+	vrf "github.com/vechain/go-ecvrf"
 
 	"github.com/elfinguard/chainlogs/bch"
 )
 
-type MetaData struct {
+type TokenMetaData struct {
 	Amount        uint64 // 8 bytes
 	Possibility   uint16 // 2 bytes
 	TokenCategory []byte // 32 bytes
 	NftCommitment []byte // 40 bytes
+}
+
+type ReencryptedDataForTokenOwner struct {
+	Data hexutil.Bytes `json:"data"`
+}
+
+type ReencryptedDataForPaidUser struct {
+	Data     hexutil.Bytes `json:"data"`
+	VrfAlpha hexutil.Bytes `json:"vrfAlpha"`
+	VrfBeta  hexutil.Bytes `json:"vrfBeta"`
+	VrfPi    hexutil.Bytes `json:"vrfPi"`
 }
 
 func decryptForTokenOwner(
@@ -33,7 +47,7 @@ func decryptForTokenOwner(
 	vout uint32,
 ) ([]byte, error) {
 	// decode & check metadata
-	metaData, err := decodeMetaData(encodedMetaData)
+	metaData, err := decodeTokenMetaData(encodedMetaData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %d", err)
 	}
@@ -105,10 +119,13 @@ func decryptForPaidUser(
 	encryptedData []byte,
 	reencryptPubKey []byte,
 	rawTx []byte,
-) ([]byte, error) { // decode & check metadata
-	metaData, err := decodeMetaData(encodedMetaData)
+) (*ReencryptedDataForPaidUser, error) { // decode & check metadata
+	metaData, err := decodeTokenMetaData(encodedMetaData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %d", err)
+	}
+	if !isAllZero(metaData.TokenCategory) {
+		return nil, fmt.Errorf("token category must be zero for now")
 	}
 
 	// decrypt & check encrypted data
@@ -125,6 +142,26 @@ func decryptForPaidUser(
 			hex.EncodeToString(a), hex.EncodeToString(b[:]))
 	}
 
+	// check tx
+	msgTx, err := decodeMsgTx(rawTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode rawTx: %w", err)
+	}
+	txOk := false
+	p2pkh := bchutil.Hash160(reencryptPubKey)
+	for _, txOut := range msgTx.TxOut {
+		if txOut.Value >= int64(metaData.Amount) {
+			addr, ok := isP2PKH(txOut.PkScript)
+			if ok && bytes.Equal(p2pkh, addr) {
+				txOk = true
+				break
+			}
+		}
+	}
+	if !txOk {
+		return nil, fmt.Errorf("invalid tx")
+	}
+
 	// test tx
 	mempoolTestOk, err := bchClient.TestMempoolAccept(rawTx)
 	if err != nil {
@@ -134,17 +171,28 @@ func decryptForPaidUser(
 		return nil, fmt.Errorf("testmempoolaccept returns false")
 	}
 
-	// check tx
-	msgTx, err := decodeMsgTx(rawTx)
+	// check possibillity & broadcast tx
+	txHash := msgTx.TxHash()
+	alpha := gethcmn.FromHex(txHash.String())
+	beta, pi, err := vrf.Secp256k1Sha256Tai.Prove(privKey, alpha)
 	if err != nil {
-		return nil, fmt.Errorf("failed to decode rawTx: %w", err)
+		return nil, fmt.Errorf("failed to generate VRF random")
 	}
-	// TODO
-	fmt.Println(metaData, msgTx)
-
-	// TODO:
-	// check possibillity
-	// broadcast tx
+	if n := len(beta); n != 32 {
+		return nil, fmt.Errorf("invalid beta length: %d", n)
+	}
+	rand16 := toUint16(beta[30:])
+	if rand16 < metaData.Possibility {
+		//fmt.Println("txHash:", txHash.String())
+		_txHash, err := bchClient.SendRawTransaction(rawTx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to broadcast tx: %w", err)
+		}
+		if !_txHash.IsEqual(&txHash) {
+			return nil, fmt.Errorf("txHash not match: %s!=%s",
+				txHash.String(), _txHash.String())
+		}
+	}
 
 	// reencrypt data
 	eciesPubKey, err := eciesgo.NewPublicKeyFromBytes(reencryptPubKey)
@@ -156,14 +204,19 @@ func decryptForPaidUser(
 		return nil, fmt.Errorf("failed to reencrypt data: %w", err)
 	}
 
-	return reencryptedData, nil
+	return &ReencryptedDataForPaidUser{
+		Data:     reencryptedData,
+		VrfAlpha: alpha,
+		VrfBeta:  beta,
+		VrfPi:    pi,
+	}, nil
 }
 
-func decodeMetaData(data []byte) (MetaData, error) {
+func decodeTokenMetaData(data []byte) (TokenMetaData, error) {
 	if n := len(data); n != 8+2+32+40 {
-		return MetaData{}, fmt.Errorf("invalid metadata len: %d", n)
+		return TokenMetaData{}, fmt.Errorf("invalid metadata len: %d", n)
 	}
-	return MetaData{
+	return TokenMetaData{
 		Amount:        uint64(binary.LittleEndian.Uint64(data[0:8])),
 		Possibility:   uint16(binary.LittleEndian.Uint16(data[8:10])),
 		TokenCategory: data[10:42],
@@ -180,4 +233,13 @@ func toEciesPrivKey(privKey *ecdsa.PrivateKey) *eciesgo.PrivateKey {
 		},
 		D: privKey.D,
 	}
+}
+
+func isAllZero(a []byte) bool {
+	for _, b := range a {
+		if b != 0 {
+			return false
+		}
+	}
+	return true
 }
