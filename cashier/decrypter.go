@@ -64,7 +64,7 @@ func decryptForTokenOwner(
 	if n := len(decryptedData); n <= 32 {
 		return nil, fmt.Errorf("decrypted data is too short: %d", n)
 	}
-	if a, b := decryptedData[32:], sha256.Sum256(encodedMetaData); !bytes.Equal(a, b[:]) {
+	if a, b := decryptedData[:32], sha256.Sum256(encodedMetaData); !bytes.Equal(a, b[:]) {
 		return nil, fmt.Errorf("metadata hash not match: %s != %s",
 			hex.EncodeToString(a), hex.EncodeToString(b[:]))
 	}
@@ -232,6 +232,14 @@ func toEciesPrivKey(privKey *ecdsa.PrivateKey) *eciesgo.PrivateKey {
 			Y:     privKey.Y,
 		},
 		D: privKey.D,
+	}
+}
+
+func toEciesPubKey(privKey *ecdsa.PublicKey) *eciesgo.PublicKey {
+	return &eciesgo.PublicKey{
+		Curve: privKey.Curve,
+		X:     privKey.X,
+		Y:     privKey.Y,
 	}
 }
 
