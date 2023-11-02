@@ -3,6 +3,7 @@ package cashier
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -31,26 +32,39 @@ func decryptForTokenOwner(
 	txid string,
 	vout uint32,
 ) ([]byte, error) {
+	// decode & check metadata
 	metaData, err := decodeMetaData(encodedMetaData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode metadata: %d", err)
 	}
-
 	if metaData.Possibility != 0 {
 		return nil, fmt.Errorf("metadata.possibility is not zero: %d", metaData.Possibility)
 	}
 
+	// decrypt & check encrypted data
+	eciesPrivKey := toEciesPrivKey(privKey)
+	decryptedData, err := eciesgo.Decrypt(eciesPrivKey, encryptedData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+	}
+	if n := len(decryptedData); n <= 32 {
+		return nil, fmt.Errorf("decrypted data is too short: %d", n)
+	}
+	if a, b := decryptedData[32:], sha256.Sum256(encodedMetaData); !bytes.Equal(a, b[:]) {
+		return nil, fmt.Errorf("metadata hash not match: %s != %s",
+			hex.EncodeToString(a), hex.EncodeToString(b[:]))
+	}
+
+	// get utxo data
 	txHash, err := chainhash.NewHashFromStr(txid)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse tx hash: %w", err)
 	}
-
 	mempool := true
 	txOut, err := bchClient.GetTxOut(txHash, vout, mempool)
 	if err != nil || txOut == nil {
 		return nil, fmt.Errorf("failed to get txout: %w", err)
 	}
-
 	tokenAmt, err := strconv.ParseUint(txOut.TokenData.Amount, 10, 64)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse token amount %w", err)
@@ -71,17 +85,11 @@ func decryptForTokenOwner(
 			hex.EncodeToString(a), hex.EncodeToString(b))
 	}
 
-	eciesPrivKey := toEciesPrivKey(privKey)
-	decryptedData, err := eciesgo.Decrypt(eciesPrivKey, encryptedData)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decrypt data: %w", err)
-	}
-
+	// reencrypt data
 	eciesPubKey, err := eciesgo.NewPublicKeyFromBytes(reencryptPubKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ECIES pubkey: %w", err)
 	}
-
 	reencryptedData, err := eciesgo.Encrypt(eciesPubKey, decryptedData)
 	if err != nil {
 		return nil, fmt.Errorf("failed to reencrypt data: %w", err)
@@ -91,12 +99,64 @@ func decryptForTokenOwner(
 }
 
 func decryptForPaidUser(
-	metaData MetaData,
+	bchClient bch.IBchClient,
+	privKey *ecdsa.PrivateKey,
+	encodedMetaData []byte,
 	encryptedData []byte,
 	reencryptPubKey []byte,
 	rawTx []byte,
-) {
-	// todo
+) ([]byte, error) { // decode & check metadata
+	metaData, err := decodeMetaData(encodedMetaData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode metadata: %d", err)
+	}
+
+	// decrypt & check encrypted data
+	eciesPrivKey := toEciesPrivKey(privKey)
+	decryptedData, err := eciesgo.Decrypt(eciesPrivKey, encryptedData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decrypt data: %w", err)
+	}
+	if n := len(decryptedData); n <= 32 {
+		return nil, fmt.Errorf("decrypted data is too short: %d", n)
+	}
+	if a, b := decryptedData[32:], sha256.Sum256(encodedMetaData); !bytes.Equal(a, b[:]) {
+		return nil, fmt.Errorf("metadata hash not match: %s != %s",
+			hex.EncodeToString(a), hex.EncodeToString(b[:]))
+	}
+
+	// test tx
+	mempoolTestOk, err := bchClient.TestMempoolAccept(rawTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call testmempoolaccept: %w", err)
+	}
+	if !mempoolTestOk {
+		return nil, fmt.Errorf("testmempoolaccept returns false")
+	}
+
+	// check tx
+	msgTx, err := decodeMsgTx(rawTx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode rawTx: %w", err)
+	}
+	// TODO
+	fmt.Println(metaData, msgTx)
+
+	// TODO:
+	// check possibillity
+	// broadcast tx
+
+	// reencrypt data
+	eciesPubKey, err := eciesgo.NewPublicKeyFromBytes(reencryptPubKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ECIES pubkey: %w", err)
+	}
+	reencryptedData, err := eciesgo.Encrypt(eciesPubKey, decryptedData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to reencrypt data: %w", err)
+	}
+
+	return reencryptedData, nil
 }
 
 func decodeMetaData(data []byte) (MetaData, error) {

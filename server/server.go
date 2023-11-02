@@ -103,6 +103,7 @@ func createHttpHandlers() *http.ServeMux {
 	mux.HandleFunc("/judge", handleJudgeTx)
 	mux.HandleFunc("/prove-cashtokens", handleProveCashTokens)
 	mux.HandleFunc("/decrypt-for-token-owner", handleDecryptForTokenOwner)
+	mux.HandleFunc("/decrypt-for-paid-user", handleDecryptForPaidUser)
 	return mux
 }
 
@@ -251,6 +252,44 @@ func handleDecryptForTokenOwner(w http.ResponseWriter, r *http.Request) {
 		gethcmn.FromHex(pubkeyData),
 		txid,
 		uint32(index),
+	)
+	if err != nil {
+		NewErrResp(err.Error()).WriteTo(w)
+		return
+	}
+	NewOkResp(result).WriteTo(w)
+}
+
+func handleDecryptForPaidUser(w http.ResponseWriter, r *http.Request) {
+	metaData := utils.GetQueryParam(r, "metadata")
+	if metaData == "" {
+		NewErrResp("missing param: metaData").WriteTo(w)
+		return
+	}
+
+	encryptedData := utils.GetQueryParam(r, "encrypted")
+	if encryptedData == "" {
+		NewErrResp("missing param: encrypted").WriteTo(w)
+		return
+	}
+
+	pubkeyData := utils.GetQueryParam(r, "pubkey")
+	if pubkeyData == "" {
+		NewErrResp("missing param: pubkey").WriteTo(w)
+		return
+	}
+
+	rawTx := utils.GetQueryParam(r, "tx")
+	if rawTx == "" {
+		NewErrResp("missing param: tx").WriteTo(w)
+		return
+	}
+
+	result, err := _cashier.DecryptForPaidUser(
+		gethcmn.FromHex(metaData),
+		gethcmn.FromHex(encryptedData),
+		gethcmn.FromHex(pubkeyData),
+		gethcmn.FromHex(rawTx),
 	)
 	if err != nil {
 		NewErrResp(err.Error()).WriteTo(w)

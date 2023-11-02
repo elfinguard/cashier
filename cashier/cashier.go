@@ -19,6 +19,8 @@ type ICashier interface {
 	ProveCashTokensOwnership(txid string, vout uint32) (*CashTokensProof, error)
 	DecryptForTokenOwner(encodedMetaData []byte, encryptedData []byte, reencryptPubKey []byte,
 		txid string, vout uint32) ([]byte, error)
+	DecryptForPaidUser(encodedMetaData []byte, encryptedData []byte, reencryptPubKey []byte,
+		rawTx []byte) ([]byte, error)
 }
 
 type Cashier struct {
@@ -49,9 +51,18 @@ func (c *Cashier) DecryptForTokenOwner(
 	txid string,
 	vout uint32,
 ) ([]byte, error) {
-
 	return decryptForTokenOwner(c.bchClient, c.privKey,
 		encodedMetaData, encodedMetaData, reencryptPubKey, txid, vout)
+}
+
+func (c *Cashier) DecryptForPaidUser(
+	encodedMetaData []byte,
+	encryptedData []byte,
+	reencryptPubKey []byte,
+	rawTx []byte,
+) ([]byte, error) {
+	return decryptForPaidUser(c.bchClient, c.privKey,
+		encodedMetaData, encodedMetaData, reencryptPubKey, rawTx)
 }
 
 // Endorse a message by signing it with privKey

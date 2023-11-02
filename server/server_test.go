@@ -62,6 +62,15 @@ func (m *MockCashier) DecryptForTokenOwner(
 	panic("TODO")
 }
 
+func (m *MockCashier) DecryptForPaidUser(
+	encodedMetaData []byte,
+	encryptedData []byte,
+	reencryptPubKey []byte,
+	rawTx []byte,
+) ([]byte, error) {
+	panic("TODO")
+}
+
 func init() {
 	_privKey, _pubKey := bchec.PrivKeyFromBytes(bchec.S256(), gethcmn.FromHex(testPrivKey))
 	pubKeyBytes = _pubKey.SerializeCompressed()
@@ -117,6 +126,10 @@ func TestHandleProveCashTokens(t *testing.T) {
 }
 
 func TestHandleDecryptForTokenOwner(t *testing.T) {
+	// TODO
+}
+
+func TestHandleDecryptForPaidUser(t *testing.T) {
 	// TODO
 }
 
