@@ -45,7 +45,7 @@ func decryptForTokenOwner(
 	reencryptPubKey []byte,
 	txid string,
 	vout uint32,
-) ([]byte, error) {
+) (*ReencryptedDataForTokenOwner, error) {
 	// decode & check metadata
 	metaData, err := decodeTokenMetaData(encodedMetaData)
 	if err != nil {
@@ -112,7 +112,9 @@ func decryptForTokenOwner(
 		return nil, fmt.Errorf("failed to reencrypt data: %w", err)
 	}
 
-	return reencryptedData, nil
+	return &ReencryptedDataForTokenOwner{
+		Data: reencryptedData,
+	}, nil
 }
 
 func decryptForPaidUser(

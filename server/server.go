@@ -213,7 +213,7 @@ func handleProveCashTokens(w http.ResponseWriter, r *http.Request) {
 func handleDecryptForTokenOwner(w http.ResponseWriter, r *http.Request) {
 	metaData := utils.GetQueryParam(r, "metadata")
 	if metaData == "" {
-		NewErrResp("missing param: metaData").WriteTo(w)
+		NewErrResp("missing param: metadata").WriteTo(w)
 		return
 	}
 
@@ -263,7 +263,7 @@ func handleDecryptForTokenOwner(w http.ResponseWriter, r *http.Request) {
 func handleDecryptForPaidUser(w http.ResponseWriter, r *http.Request) {
 	metaData := utils.GetQueryParam(r, "metadata")
 	if metaData == "" {
-		NewErrResp("missing param: metaData").WriteTo(w)
+		NewErrResp("missing param: metadata").WriteTo(w)
 		return
 	}
 

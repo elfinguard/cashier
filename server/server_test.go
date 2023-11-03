@@ -58,8 +58,8 @@ func (m *MockCashier) DecryptForTokenOwner(
 	reencryptPubKey []byte,
 	txid string,
 	vout uint32,
-) ([]byte, error) {
-	panic("TODO")
+) (*cashier.ReencryptedDataForTokenOwner, error) {
+	return &cashier.ReencryptedDataForTokenOwner{Data: []byte("abcd")}, nil
 }
 
 func (m *MockCashier) DecryptForPaidUser(
@@ -68,7 +68,8 @@ func (m *MockCashier) DecryptForPaidUser(
 	reencryptPubKey []byte,
 	rawTx []byte,
 ) (*cashier.ReencryptedDataForPaidUser, error) {
-	panic("TODO")
+	return &cashier.ReencryptedDataForPaidUser{Data: []byte("efgh")}, nil
+
 }
 
 func init() {
@@ -126,11 +127,31 @@ func TestHandleProveCashTokens(t *testing.T) {
 }
 
 func TestHandleDecryptForTokenOwner(t *testing.T) {
-	// TODO
+	require.Equal(t, `{"success":false,"error":"missing param: metadata"}`,
+		mustCallHandler("/decrypt-for-token-owner"))
+	require.Equal(t, `{"success":false,"error":"missing param: encrypted"}`,
+		mustCallHandler("/decrypt-for-token-owner?metadata=1234"))
+	require.Equal(t, `{"success":false,"error":"missing param: pubkey"}`,
+		mustCallHandler("/decrypt-for-token-owner?metadata=1234&encrypted=2345"))
+	require.Equal(t, `{"success":false,"error":"missing param: txid"}`,
+		mustCallHandler("/decrypt-for-token-owner?metadata=1234&encrypted=2345&pubkey=3456"))
+	require.Equal(t, `{"success":false,"error":"missing param: vout"}`,
+		mustCallHandler("/decrypt-for-token-owner?metadata=1234&encrypted=2345&pubkey=3456&txid=4567"))
+	require.Equal(t, `{"success":true,"result":{"data":"0x61626364"}}`,
+		mustCallHandler("/decrypt-for-token-owner?metadata=1234&encrypted=2345&pubkey=3456&txid=4567&vout=1"))
 }
 
 func TestHandleDecryptForPaidUser(t *testing.T) {
-	// TODO
+	require.Equal(t, `{"success":false,"error":"missing param: metadata"}`,
+		mustCallHandler("/decrypt-for-paid-user"))
+	require.Equal(t, `{"success":false,"error":"missing param: encrypted"}`,
+		mustCallHandler("/decrypt-for-paid-user?metadata=1234"))
+	require.Equal(t, `{"success":false,"error":"missing param: pubkey"}`,
+		mustCallHandler("/decrypt-for-paid-user?metadata=1234&encrypted=2345"))
+	require.Equal(t, `{"success":false,"error":"missing param: tx"}`,
+		mustCallHandler("/decrypt-for-paid-user?metadata=1234&encrypted=2345&pubkey=3456"))
+	require.Equal(t, `{"success":true,"result":{"data":"0x65666768","vrfAlpha":"0x","vrfBeta":"0x","vrfPi":"0x"}}`,
+		mustCallHandler("/decrypt-for-paid-user?metadata=1234&encrypted=2345&pubkey=3456&tx=4567"))
 }
 
 func mustCallHandler(path string) string {
