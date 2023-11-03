@@ -134,6 +134,12 @@ func decodeMsgTx(data []byte) (*wire.MsgTx, error) {
 	return msg, err
 }
 
+func encodeMsgTx(tx *wire.MsgTx) ([]byte, error) {
+	buf := bytes.Buffer{}
+	err := tx.Serialize(&buf)
+	return buf.Bytes(), err
+}
+
 func getReceiverInfos(tx *wire.MsgTx) (receiverInfos [][32]byte) {
 	for _, txOut := range tx.TxOut {
 		if pkh, ok := isP2PKH(txOut.PkScript); ok {
@@ -168,6 +174,17 @@ func isP2PKH(pkScript []byte) ([]byte, bool) {
 		return pkScript[3:23], true
 	}
 	return nil, false
+}
+
+func makeP2PKHpkScript(pbkh []byte) []byte {
+	script := make([]byte, 25)
+	script[0] = txscript.OP_DUP
+	script[1] = txscript.OP_HASH160
+	script[2] = txscript.OP_DATA_20
+	copy(script[3:23], pbkh)
+	script[23] = txscript.OP_EQUALVERIFY
+	script[24] = txscript.OP_CHECKSIG
+	return script
 }
 
 // OP_RETURN <data>

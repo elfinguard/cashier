@@ -11,6 +11,7 @@ import (
 	gethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/gcash/bchd/btcjson"
 	"github.com/gcash/bchd/chaincfg/chainhash"
+	"github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil"
 	"github.com/stretchr/testify/require"
 )
@@ -141,5 +142,102 @@ func TestDecryptForTokenOwner(t *testing.T) {
 }
 
 func TestDecryptForPaidUser(t *testing.T) {
-	// TODO
+	ecdsaPrivKey := newPrivKey()
+	ecdsaPubKey := &ecdsaPrivKey.PublicKey
+	pubKeyBytes := gethcrypto.FromECDSAPub(ecdsaPubKey)
+	pubKeyHash := bchutil.Hash160(pubKeyBytes)
+	// eciesPrivKey := toEciesPrivKey(ecdsaPrivKey)
+	eciesPubKey := toEciesPubKey(ecdsaPubKey)
+
+	encodedMetaData := append(append([]byte("aaaaaaaabb"), make([]byte, 32)...), []byte("dddddddddddddddddddddddddddddddddddddddd")...)
+	metaDataHash := sha256.Sum256(encodedMetaData)
+	secretData := append(metaDataHash[:], []byte("secret")...)
+	encryptedData, err := eciesgo.Encrypt(eciesPubKey, secretData)
+	require.NoError(t, err)
+	// fmt.Println("encodedMetaData:", hex.EncodeToString(encodedMetaData))
+	// fmt.Println("metaDataHash:", hex.EncodeToString(metaDataHash[:]))
+
+	rawTx1, err := encodeMsgTx(&wire.MsgTx{
+		TxOut: []*wire.TxOut{{
+			Value:    1,
+			PkScript: makeP2PKHpkScript(pubKeyHash),
+		}},
+	})
+	require.NoError(t, err)
+
+	rawTx2, err := encodeMsgTx(&wire.MsgTx{
+		TxOut: []*wire.TxOut{{
+			Value:    0x6666666666666666,
+			PkScript: makeP2PKHpkScript(make([]byte, 20)),
+		}},
+	})
+	require.NoError(t, err)
+
+	rawTx3, err := encodeMsgTx(&wire.MsgTx{
+		TxOut: []*wire.TxOut{{
+			Value:    0x6666666666666666,
+			PkScript: makeP2PKHpkScript(pubKeyHash),
+		}},
+	})
+	require.NoError(t, err)
+
+	tx4 := &wire.MsgTx{
+		TxOut: []*wire.TxOut{{
+			Value:    0x6666666666666667,
+			PkScript: makeP2PKHpkScript(pubKeyHash),
+		}},
+	}
+	txHash4 := tx4.TxHash()
+	rawTx4, err := encodeMsgTx(tx4)
+	require.NoError(t, err)
+
+	mockBchClient := &bch.MockClient{}
+	mockBchClient.AddTxToAccept(hex.EncodeToString(rawTx4))
+	mockBchClient.AddTxToSend(hex.EncodeToString(rawTx4), &txHash4)
+
+	metaDataTooShort := []byte("too_short")
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		metaDataTooShort, encryptedData, nil, nil)
+	require.ErrorContains(t, err, "failed to decode metadata")
+
+	metaDataTooLong := append(encodedMetaData, 1)
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		metaDataTooLong, encryptedData, nil, nil)
+	require.ErrorContains(t, err, "failed to decode metadata")
+
+	categoryNot0 := []byte("aaaaaaaabbccccccccccccccccccccccccccccccccdddddddddddddddddddddddddddddddddddddddd")
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		categoryNot0, encryptedData, nil, nil)
+	require.ErrorContains(t, err, "token category must be zero for now")
+
+	decryptedToShort, err := eciesgo.Encrypt(eciesPubKey, []byte("too short"))
+	require.NoError(t, err)
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		encodedMetaData, decryptedToShort, nil, nil)
+	require.ErrorContains(t, err, "decrypted data is too short")
+
+	changedMetaData := bytes.ReplaceAll(encodedMetaData, []byte("aaa"), []byte("xxx"))
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		changedMetaData, encryptedData, nil, nil)
+	require.ErrorContains(t, err, "metadata hash not match")
+
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		encodedMetaData, encryptedData, nil, []byte("tx"))
+	require.ErrorContains(t, err, "failed to decode rawTx")
+
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		encodedMetaData, encryptedData, pubKeyBytes, rawTx1)
+	require.ErrorContains(t, err, "invalid tx")
+
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		encodedMetaData, encryptedData, pubKeyBytes, rawTx2)
+	require.ErrorContains(t, err, "invalid tx")
+
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		encodedMetaData, encryptedData, pubKeyBytes, rawTx3)
+	require.ErrorContains(t, err, "testmempoolaccept returns false")
+
+	_, err = decryptForPaidUser(mockBchClient, ecdsaPrivKey,
+		encodedMetaData, encryptedData, pubKeyBytes, rawTx4)
+	require.NoError(t, err)
 }
