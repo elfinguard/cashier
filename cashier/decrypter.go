@@ -76,8 +76,11 @@ func decryptForTokenOwner(
 	}
 	mempool := true
 	txOut, err := bchClient.GetTxOut(txHash, vout, mempool)
-	if err != nil || txOut == nil {
+	if err != nil {
 		return nil, fmt.Errorf("failed to get txout: %w", err)
+	}
+	if txOut == nil {
+		return nil, fmt.Errorf("failed to get txout")
 	}
 	tokenAmt, err := strconv.ParseUint(txOut.TokenData.Amount, 10, 64)
 	if err != nil {
@@ -85,14 +88,14 @@ func decryptForTokenOwner(
 	}
 
 	// check token info
+	if tokenAmt != metaData.Amount {
+		return nil, fmt.Errorf("token amount not match: %d != %d", tokenAmt, metaData.Amount)
+	}
 	if a, b := txOut.TokenData.Category, hex.EncodeToString(metaData.TokenCategory); a != b {
 		return nil, fmt.Errorf("token category not match: %s != %s", a, b)
 	}
 	if a, b := txOut.TokenData.Nft.Commitment, hex.EncodeToString(metaData.NftCommitment); a != b {
 		return nil, fmt.Errorf("nft commitment not match: %s != %s", a, b)
-	}
-	if tokenAmt != metaData.Amount {
-		return nil, fmt.Errorf("token amount not match: %d != %d", tokenAmt, metaData.Amount)
 	}
 	if a, b := getAddrFromTxOut(txOut), bchutil.Hash160(reencryptPubKey); !bytes.Equal(a, b) {
 		return nil, fmt.Errorf("token owner not match: %s != %s",
